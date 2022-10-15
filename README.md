@@ -78,6 +78,7 @@ module "redis" {
 | `startup_probe_timeout`           | No       | `1`                         | Timeout of the probe in seconds                    |
 | `startup_probe_success`           | No       | `1`                         | Minimum consecutive successes for the probe        |
 | `startup_probe_failure`           | No       | `3`                         | Minimum consecutive failures for the probe         |
+| `priority_class_name`             | No       | `null`                      | Sets a priority class to the pods                  |
 
 ### Service Variables
 

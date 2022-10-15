@@ -351,3 +351,9 @@ variable "startup_probe_failure" {
   description = "Minimum consecutive failures for the probe to be considered failed after having succeeded"
   default     = 30
 }
+
+variable "priority_class_name" {
+  type        = string
+  description = "The priority class name for the statefulset"
+  default     = null
+}
