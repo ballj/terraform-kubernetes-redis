@@ -58,6 +58,7 @@ resource "kubernetes_stateful_set" "redis" {
         labels = local.selector_labels
       }
       spec {
+        priority_class_name = var.priority_class_name
         dynamic "security_context" {
           for_each = var.security_context_enabled ? [1] : []
           content {
