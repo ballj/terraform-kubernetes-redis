@@ -94,14 +94,25 @@ resource "kubernetes_stateful_set" "redis" {
         container {
           image = format("%s:%s", var.image_name, var.image_tag)
           name  = regex("[[:alnum:]]+$", var.image_name)
-          resources {
-            limits = {
-              cpu    = var.resources_limits_cpu
-              memory = var.resources_limits_memory
-            }
-            requests = {
-              cpu    = var.resources_requests_cpu
-              memory = var.resources_requests_memory
+          dynamic "resources" {
+            for_each = length(var.resources_limits_cpu) > 0 || length(var.resources_limits_memory) > 0 || length(var.resources_requests_cpu) > 0 || length(var.resources_requests_memory) > 0 ? [1] : []
+            content {
+              limits = length(var.resources_limits_cpu) > 0 && length(var.resources_limits_memory) > 0 ? {
+                cpu    = var.resources_limits_cpu
+                memory = var.resources_limits_memory
+                } : length(var.resources_limits_cpu) > 0 ? {
+                cpu = var.resources_limits_cpu
+                } : length(var.resources_limits_memory) > 0 ? {
+                memory = var.resources_limits_memory
+              } : {}
+              requests = length(var.resources_requests_cpu) > 0 && length(var.resources_requests_memory) > 0 ? {
+                cpu    = var.resources_requests_cpu
+                memory = var.resources_requests_memory
+                } : length(var.resources_limits_cpu) > 0 ? {
+                cpu = var.resources_requests_cpu
+                } : length(var.resources_requests_memory) > 0 ? {
+                memory = var.resources_requests_memory
+              } : {}
             }
           }
           port {

@@ -183,25 +183,25 @@ variable "security_context_gid" {
 variable "resources_requests_cpu" {
   type        = string
   description = "The maximum amount of compute resources allowed"
-  default     = null
+  default     = ""
 }
 
 variable "resources_requests_memory" {
   type        = string
   description = "The minimum amount of compute resources required"
-  default     = null
+  default     = ""
 }
 
 variable "resources_limits_cpu" {
   type        = string
   description = "The maximum amount of compute resources allowed"
-  default     = null
+  default     = ""
 }
 
 variable "resources_limits_memory" {
   type        = string
   description = "The minimum amount of compute resources required"
-  default     = null
+  default     = ""
 }
 
 variable "env" {
