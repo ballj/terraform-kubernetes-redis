@@ -22,6 +22,16 @@ locals {
     "app.kubernetes.io/managed-by" = "terraform"
     "app.kubernetes.io/component"  = "redis"
   })
+  create_password = anytrue([contains(keys(var.env), "REDIS_PASSWORD_FILE"), length(var.password_secret) > 0, var.password_required == false]) ? false : true
+  env_secret = contains(keys(var.env), "REDIS_PASSWORD_FILE") ? var.env_secret : anytrue([length(var.password_secret) > 0, var.password_required]) ? flatten([[{
+    name   = "REDIS_PASSWORD",
+    secret = local.create_password ? kubernetes_secret.redis[0].metadata[0].name : var.password_secret,
+    key    = var.password_key
+  }], var.env_secret]) : var.env_secret
+  healthcheck_command_env = "redis-cli -a $${REDIS_PASSWORD} PING 2>/dev/null | grep -q PONG"
+  healthcheck_command_file = "redis-cli -a $$(cat $$REDIS_PASSWORD_FILE) PING 2>/dev/null | grep -q PONG"
+  healthcheck_command_nopass = "redis-cli PING | grep -q PONG"
+  healthcheck_command = contains(keys(var.env), "REDIS_PASSWORD_FILE") ? local.healthcheck_command_file : var.password_required ? local.healthcheck_command_env : local.healthcheck_command_nopass
 }
 
 resource "kubernetes_stateful_set" "redis" {
@@ -59,6 +69,7 @@ resource "kubernetes_stateful_set" "redis" {
       }
       spec {
         priority_class_name = var.priority_class_name
+        service_account_name = length(var.service_account_name) > 0 ? var.service_account_name : null
         dynamic "security_context" {
           for_each = var.security_context_enabled ? [1] : []
           content {
@@ -98,24 +109,9 @@ resource "kubernetes_stateful_set" "redis" {
             protocol       = "TCP"
             container_port = kubernetes_service.redis.spec[0].port[0].target_port
           }
-          dynamic "env" {
-            for_each = anytrue([var.password_required, length(var.password_secret) > 0]) ? [1] : []
-            content {
-              name = "REDIS_PASSWORD"
-              value_from {
-                secret_key_ref {
-                  name = alltrue([var.password_required, length(var.password_secret) > 0]) ? var.password_secret : var.password_required ? kubernetes_secret.redis[0].metadata[0].name : ""
-                  key  = var.password_key
-                }
-              }
-            }
-          }
-          dynamic "env" {
-            for_each = alltrue([var.password_required, length(var.password_secret) > 0]) ? [] : [1]
-            content {
-              name  = "ALLOW_EMPTY_PASSWORD"
-              value = "yes"
-            }
+          env {
+            name = "ALLOW_EMPTY_PASSWORD"
+            value = var.password_required ? "no" : "yes"
           }
           dynamic "env" {
             for_each = var.env
@@ -125,7 +121,7 @@ resource "kubernetes_stateful_set" "redis" {
             }
           }
           dynamic "env" {
-            for_each = [for env_var in var.env_secret : {
+            for_each = [for env_var in local.env_secret : {
               name   = env_var.name
               secret = env_var.secret
               key    = env_var.key
@@ -168,7 +164,7 @@ resource "kubernetes_stateful_set" "redis" {
               success_threshold     = var.readiness_probe_success
               failure_threshold     = var.readiness_probe_failure
               exec {
-                command = ["/bin/sh", "-c", "if [ -z $${REDIS_PASSWORD} ]; then redis-cli PING | grep -q PONG; else redis-cli -a $${REDIS_PASSWORD} PING 2>/dev/null | grep -q PONG; fi"]
+                command = ["/bin/sh", "-c", local.healthcheck_command]
               }
             }
           }
@@ -181,7 +177,7 @@ resource "kubernetes_stateful_set" "redis" {
               success_threshold     = var.liveness_probe_success
               failure_threshold     = var.liveness_probe_failure
               exec {
-                command = ["/bin/sh", "-c", "if [ -z $${REDIS_PASSWORD} ]; then redis-cli PING | grep -q PONG; else redis-cli -a $${REDIS_PASSWORD} PING 2>/dev/null | grep -q PONG; fi"]
+                command = ["/bin/sh", "-c", local.healthcheck_command]
               }
             }
           }
@@ -194,7 +190,7 @@ resource "kubernetes_stateful_set" "redis" {
               success_threshold     = var.startup_probe_success
               failure_threshold     = var.startup_probe_failure
               exec {
-                command = ["/bin/sh", "-c", "if [ -z $${REDIS_PASSWORD} ]; then redis-cli PING | grep -q PONG; else redis-cli -a $${REDIS_PASSWORD} PING 2>/dev/null | grep -q PONG; fi"]
+                command = ["/bin/sh", "-c", local.healthcheck_command]
               }
             }
           }
@@ -267,7 +263,7 @@ resource "kubernetes_service" "redis" {
 }
 
 resource "kubernetes_secret" "redis" {
-  count = length(var.password_secret) == 0 ? var.password_required ? 1 : 0 : 0
+  count = local.create_password ? 1 : 0
   metadata {
     namespace = var.namespace
     name      = var.object_prefix
@@ -280,7 +276,7 @@ resource "kubernetes_secret" "redis" {
 
 
 resource "random_password" "password" {
-  count   = length(var.password_secret) == 0 ? var.password_required ? 1 : 0 : 0
+  count = local.create_password ? 1 : 0
   length  = 16
   special = false
 }

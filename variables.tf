@@ -50,6 +50,12 @@ variable "image_tag" {
   default     = "6.2.5-debian-10-r70"
 }
 
+variable "service_account_name" {
+  type        = string
+  description = "Service account name to add to the pod"
+  default     = ""
+}
+
 variable "password_required" {
   description = "Force the use of a password"
   default     = true

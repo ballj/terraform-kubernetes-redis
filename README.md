@@ -27,6 +27,7 @@ module "redis" {
 | `labels`                          | No       | N/A                         | Common labels to add to all objects - See example  |
 | `image_name`                      | No       | `bitnami/redis`             | Image to deploy as part of deployment              |
 | `image_tag`                       | No       | `6.0.10-debian-10-r4`       | Image tag to deploy                                |
+| `service_account_name`            | No       | `""`                        | Service account to attach to the pod               |
 | `timeout_create`                  | No       | `3m`                        | Timeout for creating the statefulset               |
 | `timeout_update`                  | No       | `3m`                        | Timeout for updating the statefulset               |
 | `timeout_delete`                  | No       | `10m`                       | Timeout for deleting the statefulset               |
@@ -132,3 +133,8 @@ module "redis" {
   ]
 }
 ```
+
+#### Redis Password File
+
+The password can be passed by using the variable `REDIS_PASSWORD_FILE` rather
+than using Kubernetes secrets.
