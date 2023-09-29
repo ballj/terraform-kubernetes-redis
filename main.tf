@@ -41,9 +41,10 @@ resource "kubernetes_stateful_set" "redis" {
     delete = var.timeout_delete
   }
   metadata {
-    namespace = var.namespace
-    name      = var.object_prefix
-    labels    = local.common_labels
+    namespace   = var.namespace
+    name        = var.object_prefix
+    labels      = local.common_labels
+    annotations = var.annotations
   }
   wait_for_rollout = var.wait_for_rollout
   spec {
@@ -66,6 +67,7 @@ resource "kubernetes_stateful_set" "redis" {
     template {
       metadata {
         labels = local.selector_labels
+        annotations = var.template_annotations
       }
       spec {
         priority_class_name = var.priority_class_name

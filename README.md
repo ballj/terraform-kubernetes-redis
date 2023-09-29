@@ -31,6 +31,8 @@ module "redis" {
 | `timeout_create`                  | No       | `3m`                        | Timeout for creating the statefulset               |
 | `timeout_update`                  | No       | `3m`                        | Timeout for updating the statefulset               |
 | `timeout_delete`                  | No       | `10m`                       | Timeout for deleting the statefulset               |
+| `annotations`                     | No       | `{}`                        | Annotations to add to the statefulset              |
+| `template_annotations`            | No       | `{}`                        | Annotations to add to the template (recreate pods) |
 | `resources_requests_cpu`          | No       | `null`                      | The minimum amount of compute resources required   |
 | `resources_requests_memory`       | No       | `null`                      | The minimum amount of compute resources required   |
 | `resources_limits_cpu`            | No       | `null`                      | The maximum amount of compute resources allowed    |
